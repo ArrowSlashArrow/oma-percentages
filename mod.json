@@ -8,12 +8,11 @@
 	},
 	"id": "arrowslasharrow.oma-percentages",
 	"name": "OMA Percentages",
-	"version": "v1.0.0",
+	"version": "v1.0.2",
 	"developer": "ArrowSlashArrow",
 	"description": "Displays the current song and the player's percentage within while playing OMA",
 	"dependencies": {
-		"geode.node-ids": ">=v1.23.3",
-		"cvolton.betterinfo": ">=4.4.4"
+		"geode.node-ids": ">=v1.23.3"
 	},
 	"tags": ["enhancement"]
 }

@@ -252,13 +252,7 @@ class $modify(OMALevelInfo, LevelInfoLayer) {
  */
 #include <Geode/modify/PlayLayer.hpp>
 class $modify(OMAPercentage, PlayLayer) {
-	/**
-	 * Typically classes in GD are initialized using the `init` function, (though not always!),
-	 * so here we use it to add our own button to the bottom menu.
-	 *
-	 * Note that for all hooks, your signature has to *match exactly*,
-	 * `void init()` would not place a hook!
-	*/
+	// hook into the play layer to init this when the player is playing a level
 	bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
 		// check that we are in a level
 		if (!PlayLayer::init(level, useReplay, dontCreateObjects)) {
@@ -269,13 +263,13 @@ class $modify(OMAPercentage, PlayLayer) {
 		log::debug("in a level");
 
 		if (this->check_in_OMA()) {
-			auto label = CCLabelBMFont::create("inited", "bigFont.fnt");
+			auto screen_size = CCDirector::sharedDirector()->getWinSize();
+			auto label = CCLabelBMFont::create("", "bigFont.fnt");
 
 			label->setID("oma_song"_spr);
 			label->setScale(0.5f);
-			label->setPosition({284, 300});
-			label->setZOrder(15);
-			this->addChild(label);
+			label->setPosition({screen_size.width / 2.0f, screen_size.height - 20.0f});
+			this->m_uiLayer->addChild(label);
 		}
 
 		return true;
@@ -289,7 +283,7 @@ class $modify(OMAPercentage, PlayLayer) {
 		}
 
 		auto pl = PlayLayer::get();
-		auto label = dynamic_cast<CCLabelBMFont*>(this->getChildByID("oma_song"_spr));
+		auto label = geode::cast::typeinfo_cast<CCLabelBMFont*>(this->m_uiLayer->getChildByID("oma_song"_spr));
 		if (!label) {
 			return;
 		}
