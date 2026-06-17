@@ -14,5 +14,6 @@
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3",
 		"cvolton.betterinfo": ">=4.4.4"
-	}
+	},
+	"tags": ["enhancement"]
 }
