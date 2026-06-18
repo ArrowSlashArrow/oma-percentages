@@ -177,7 +177,7 @@ float song_percentages[] = {
 	94.22,	// at the speed of light
 	95.39,	// credits
 	100.0,	// magic touch
-
+	0.0		// exists because of NOT_STARTPOS
 };
 
 std::string song_names[] = {
@@ -216,8 +216,55 @@ std::string song_names[] = {
 	"Magic Touch",
 };
 
+
+// arbitrary sentinel value
+const size_t NOT_STARTPOS = 33;
+// 30 (+ 1 padding) startposes: (pos_x, pos_y, index of percentage offset from song_percentages)
+std::array<std::tuple<int, int, size_t>, 31> startpos_starts = {
+	{
+		{-1000000, -1000000, NOT_STARTPOS},	// stereo madness; set to -1m, -1m because there is not startpos for this song
+		{31200, 99, 0},		// jumper
+		{66400, 105, 1}, 		// clubstep
+		{165, 2055, 2},		// every end
+		{164415, 1695, 3},	// deadlocked
+		{103, 3825, 4},		// tokyo nights
+		{38835, 6375, 5},		// zone of thunder v2
+		{98355, 6585, 6},		// pagoda
+		{157005, 7875, 7},	// summit
+		{75, 7155, 8},		// shiawase vip
+		{76969, 7875, 9},		// idolize
+		{119475, 8535, 10},	// sonic blaster
+		{175753, 9735, 11},	// slow down
+		{101, 8925, 12},		// classical vip
+		{54525, 9765, 13},	// flow
+		{87255, 9915, 14},	// monolith
+		{73, 12555, 15},		// wavelight
+		{84255, 12465, 17},	// phobos
+		{140387, 14655, 18},	// intercept 2
+		{168285, 14805, 19},	// eyes in the water
+		{97, 15825, 20},		// dimension
+		{70845, 16755, 21},	// dark matter
+		{151565, 17755, 22},	// question mark
+		{75, 18225, 23},		// isolation
+		{76155, 19095, 24},	// sphere
+		{165285, 19065, 25},	// we can dream
+		{705, 20985, 26},		// 1077
+		{111675, 22815, 27},	// time machine
+		{105, 23145, 28},		// flamewall
+		{75, 25965, 29},		// at the speed of light
+		{112635, 25995, 31},	// magic touch
+	}
+};
+
 float g_level_length = -1.0f;
+bool playing_startpos = false;
+size_t startpos_index = 0;
+
+// it takes some time to enter the song, and this offset keeps track of that. used to adjust percentage.
+float time_offset = 0.0f;
+
 const int OMA_ID = 131249343;
+const int OMA_STARTPOS_ID = 131249368;
 // maybe we should include the startpos ID too but that's untested
 
 // get level length from LevelInfoLayer
@@ -225,14 +272,21 @@ const int OMA_ID = 131249343;
 class $modify(OMALevelInfo, LevelInfoLayer) {
 	void updateLabelValues() {
 		LevelInfoLayer::updateLabelValues();
-		if (m_level->m_levelID != OMA_ID) {
+		startpos_index = 0;
+		playing_startpos = false;
+		time_offset = 0.0f;
+		if (m_level->m_levelID == OMA_STARTPOS_ID) {
+			auto raw_time = m_level->m_timestamp / 240.0f;
+			g_level_length = raw_time > 0 ? raw_time : m_level->isPlatformer() ? 0 : std::ceil(timeForLevelString(m_level->m_levelString));
+			playing_startpos = true;
+			log::info("playing oma startpos");
+		} else if (m_level->m_levelID == OMA_ID) {
+			auto raw_time = m_level->m_timestamp / 240.0f;
+			g_level_length = raw_time > 0 ? raw_time : m_level->isPlatformer() ? 0 : std::ceil(timeForLevelString(m_level->m_levelString));
+			log::info("got level length: {}", g_level_length);
+		} else {
 			log::info("not playing OMA, won't compute time");
-			return;
 		}
-
-		auto raw_time = m_level->m_timestamp / 240.0f;
-		g_level_length = raw_time > 0 ? raw_time : m_level->isPlatformer() ? 0 : std::ceil(timeForLevelString(m_level->m_levelString));
-		log::info("got level length: {}", g_level_length);
 	}
 };
 
@@ -263,6 +317,7 @@ class $modify(OMAPercentage, PlayLayer) {
 		log::debug("in a level");
 
 		if (this->check_in_OMA()) {
+			// create label
 			auto screen_size = CCDirector::sharedDirector()->getWinSize();
 			auto label = CCLabelBMFont::create("", "bigFont.fnt");
 
@@ -273,6 +328,24 @@ class $modify(OMAPercentage, PlayLayer) {
 		}
 
 		return true;
+	}
+
+	// returns the index of the startpos that it detected the player to be at
+	// NOT_STARTPOS if none detected
+	int get_startpos_idx(float x, float y) {
+		size_t idx = 1;
+		while (idx < 31) {
+			auto p = startpos_starts[idx];
+			auto dx = std::get<0>(p) - x;
+			auto dy = std::get<1>(p) - y;
+			auto d = (dx * dx) + (dy * dy);
+			if (d < 10000) {
+				return std::get<2>(p);
+			}
+
+			idx += 1;
+		}
+		return NOT_STARTPOS;
 	}
 
 	void postUpdate(float dt) {
@@ -292,11 +365,29 @@ class $modify(OMAPercentage, PlayLayer) {
 		// float percentage = pl->m_player1->getPositionX() / pl->m_levelLength * 100.0f;
 
 		// get current player percentage
-		float percentage = (pl->m_gameState.m_levelTime / g_level_length) * 100.0f;
+		float percentage = 100.0f * (pl->m_gameState.m_levelTime - time_offset) / g_level_length;
+		if (playing_startpos && percentage < 0.5) {	// percentage < 0.5 prevents us from scanning a startpos that is later in the level
+			// apply offset to percentage
+			auto p1 = pl->m_player1;
+			auto sp_idx = this->get_startpos_idx(p1->getPositionX(), p1->getPositionY());
+			if (sp_idx != NOT_STARTPOS) {
+				// update detected startpos index
+				// log::info("got startpos index: {}", sp_idx);
+				startpos_index = sp_idx;
+				time_offset = pl->m_gameState.m_levelTime;
+			}
+		}
+		// then, map startpos index to percent offset
+		// since we aren't in the level for long before we hit a teleport this is necessary
+		// to properly adjust the percentage
+		percentage += song_percentages[startpos_index];
+		// log::info("new percentage: {}, sp idx: {}", percentage, startpos_index);
+
 		label->setCString(this->get_song(percentage).c_str());
 	}
 
 	bool check_in_OMA() {
+		if (playing_startpos) return true;
 		auto pl = PlayLayer::get();
 		if (!pl) {
 			return false;
