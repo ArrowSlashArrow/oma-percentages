@@ -8,7 +8,7 @@
 	},
 	"id": "arrowslasharrow.oma-percentages",
 	"name": "OMA Percentages",
-	"version": "v1.0.2",
+	"version": "v1.1.0",
 	"developer": "ArrowSlashArrow",
 	"description": "Displays the current song and the player's percentage within while playing OMA",
 	"dependencies": {
