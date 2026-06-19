@@ -171,7 +171,7 @@ float song_percentages[] = {
 	65.61,	// isolation
 	69.72,	// sphere
 	73.02,	// we can dream
-	78.04,	// 1077
+	77.98,	// 1077
 	82.83,	// time machine
 	89.89,	// flamewall
 	94.22,	// at the speed of light
@@ -247,7 +247,7 @@ std::array<std::tuple<int, int, size_t>, 31> startpos_starts = {
 		{151565, 17755, 22},	// question mark
 		{75, 18225, 23},		// isolation
 		{76155, 19095, 24},	// sphere
-		{165285, 19065, 25},	// we can dream
+		{165400, 19700, 25},	// we can dream
 		{705, 20985, 26},		// 1077
 		{111675, 22815, 27},	// time machine
 		{105, 23145, 28},		// flamewall
