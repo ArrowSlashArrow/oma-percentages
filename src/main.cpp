@@ -258,7 +258,7 @@ std::array<std::tuple<int, int, size_t>, 31> startpos_starts = {
 
 float g_level_length = -1.0f;
 bool playing_startpos = false;
-size_t startpos_index = 0;
+size_t startpos_index = NOT_STARTPOS;
 
 // it takes some time to enter the song, and this offset keeps track of that. used to adjust percentage.
 float time_offset = 0.0f;
@@ -272,7 +272,7 @@ const int OMA_STARTPOS_ID = 131249368;
 class $modify(OMALevelInfo, LevelInfoLayer) {
 	void updateLabelValues() {
 		LevelInfoLayer::updateLabelValues();
-		startpos_index = 0;
+		startpos_index = NOT_STARTPOS;
 		playing_startpos = false;
 		time_offset = 0.0f;
 		if (m_level->m_levelID == OMA_STARTPOS_ID) {
@@ -366,28 +366,30 @@ class $modify(OMAPercentage, PlayLayer) {
 
 		// get current player percentage
 		float percentage = 100.0f * (pl->m_gameState.m_levelTime - time_offset) / g_level_length;
-		if (playing_startpos && percentage < 0.5) {	// percentage < 0.5 prevents us from scanning a startpos that is later in the level
-			// apply offset to percentage
-			auto p1 = pl->m_player1;
-			auto sp_idx = this->get_startpos_idx(p1->getPositionX(), p1->getPositionY());
-			if (sp_idx != NOT_STARTPOS) {
-				// update detected startpos index
-				// log::info("got startpos index: {}", sp_idx);
-				startpos_index = sp_idx;
-				time_offset = pl->m_gameState.m_levelTime;
+		if (playing_startpos) {
+			if (percentage < 0.5) {
+				// percentage < 0.5 prevents us from scanning a startpos that is later in the level
+				// apply offset to percentage
+				auto p1 = pl->m_player1;
+				auto sp_idx = this->get_startpos_idx(p1->getPositionX(), p1->getPositionY());
+				if (sp_idx != NOT_STARTPOS) {
+					// update detected startpos index
+					// log::info("got startpos index: {}", sp_idx);
+					startpos_index = sp_idx;
+					time_offset = pl->m_gameState.m_levelTime;
+				}
 			}
+			// then, map startpos index to percent offset
+			// since we aren't in the level for long before we hit a teleport this is necessary
+			// to properly adjust the percentage
+			percentage += song_percentages[startpos_index];
 		}
-		// then, map startpos index to percent offset
-		// since we aren't in the level for long before we hit a teleport this is necessary
-		// to properly adjust the percentage
-		percentage += song_percentages[startpos_index];
 		// log::info("new percentage: {}, sp idx: {}", percentage, startpos_index);
 
 		label->setCString(this->get_song(percentage).c_str());
 	}
 
 	bool check_in_OMA() {
-		if (playing_startpos) return true;
 		auto pl = PlayLayer::get();
 		if (!pl) {
 			return false;
@@ -395,12 +397,7 @@ class $modify(OMAPercentage, PlayLayer) {
 
 		// this checks for OMA's level ID which means it will not work on the OMA startpos level
 		auto id = pl->m_level->m_levelID;
-		if (id != OMA_ID) {
-			return false;
-		}
-
-		// check that a level length was found. don't display if not found
-		if (g_level_length < 0.0f) {
+		if (id != OMA_ID || id != OMA_STARTPOS_ID || g_level_length < 0.0f) {
 			return false;
 		}
 
