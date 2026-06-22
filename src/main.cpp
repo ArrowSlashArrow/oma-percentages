@@ -173,7 +173,7 @@ float song_percentages[] = {
 	73.02,	// we can dream
 	77.98,	// 1077
 	82.83,	// time machine
-	89.89,	// flamewall
+	89.84,	// flamewall
 	94.22,	// at the speed of light
 	95.39,	// credits
 	100.0,	// magic touch
@@ -397,7 +397,7 @@ class $modify(OMAPercentage, PlayLayer) {
 
 		// this checks for OMA's level ID which means it will not work on the OMA startpos level
 		auto id = pl->m_level->m_levelID;
-		if (id != OMA_ID || id != OMA_STARTPOS_ID || g_level_length < 0.0f) {
+		if ((id != OMA_ID && id != OMA_STARTPOS_ID) || g_level_length < 0.0f) {
 			return false;
 		}
 
