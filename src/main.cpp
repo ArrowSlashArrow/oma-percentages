@@ -2,6 +2,8 @@
  * Include the Geode headers.
  */
 #include <Geode/Geode.hpp>
+
+#include "asp/iter/Split.hpp"
 /**
  * Brings cocos2d and all Geode namespaces to the current scope.
  */
@@ -10,7 +12,7 @@ using namespace geode::prelude;
 // -- Utils --
 // All utils I got are from Cvolton's BetterInfo: https://github.com/Cvolton/betterinfo-geode/
 
-gd::string decodeBase64Gzip(const gd::string& input) {
+std::string decodeBase64Gzip(const std::string& input) {
 	return ZipUtils::decompressString(input, false, 0);
 }
 
@@ -74,7 +76,7 @@ float stof(std::string_view str) {
 	return utils::numFromString<float>(str).unwrapOr(0);
 }
 
-float timeForLevelString(const gd::string& levelString) {
+float timeForLevelString(const std::string& levelString) {
     struct SpeedPortalObject {
         int id;
         float xPos;
@@ -305,11 +307,12 @@ class $modify(OMALevelInfo, LevelInfoLayer) {
  * the class you are modifying, or you will get a compile error.
  */
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/binding/UILayer.hpp>
 class $modify(OMAPercentage, PlayLayer) {
 	// hook into the play layer to init this when the player is playing a level
-	bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
+	bool init(GJGameLevel* level, bool dontCreateObjects) {
 		// check that we are in a level
-		if (!PlayLayer::init(level, useReplay, dontCreateObjects)) {
+		if (!PlayLayer::init(level, dontCreateObjects)) {
 			log::error("Couldn't init PlayLayer!");
 			return false;
 		}
