@@ -231,7 +231,7 @@ std::array<std::tuple<int, int, size_t>, 31> startpos_starts = {
 		{164415, 1695, 3},	// deadlocked
 		{103, 3825, 4},		// tokyo nights
 		{38835, 6375, 5},		// zone of thunder v2
-		{98355, 6585, 6},		// pagoda
+		{98295, 6675, 6},		// pagoda
 		{157005, 7875, 7},	// summit
 		{75, 7155, 8},		// shiawase vip
 		{76969, 7875, 9},		// idolize
